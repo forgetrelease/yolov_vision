@@ -4,3 +4,4 @@
 *.cache
 /data
 *.pyc
+.vscode/launch.json

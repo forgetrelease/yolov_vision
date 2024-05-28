@@ -10,7 +10,7 @@ from config import LEARNING_RATE
 
 def main():
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cude' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
     model = ImageResNet().to(device)
     # model.train()
     train_data_set = ImageLabelDataset()

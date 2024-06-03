@@ -76,8 +76,10 @@ def train_mask():
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
     model = ImageMaskNet().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     try:
         model.load_state_dict(torch.load('best-mask.pth'))
+        optimizer.load_state_dict(torch.load('best-mask-opt.pth'))
     except Exception:
         pass
     # model.train()
@@ -100,7 +102,7 @@ def train_mask():
         )
     
     loss_function = SquaredMaskLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
     
     best_loss = float('inf')
     for epoch in tqdm(range(40), desc='Epoch'):
@@ -134,6 +136,7 @@ def train_mask():
                 best_loss = test_loss
                 print('保存最佳模型：{}'.format(best_loss))
                 torch.save(model.state_dict(), 'best-mask.pth')
+                torch.save(optimizer.state_dict(), 'best-mask-opt.pth')
         print('Epoch {}: Train Loss: {:.4f}, Val Loss: {:.4f}'.format(epoch+1, train_loss, test_loss))
         torch.save(model.state_dict(), 'final.pth')
     

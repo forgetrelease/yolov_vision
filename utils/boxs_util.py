@@ -1,5 +1,5 @@
 
-from PIL import ImageDraw, ImageFont
+from PIL import ImageDraw, ImageFont, Image
 import torchvision.transforms as T
 from config import *
 import torch
@@ -59,7 +59,7 @@ def normalize_box(origin_points, origin_size, target_size):
     ymax = int(target_h * ymax * 1.0 / origin_h)
     return xmin, ymin, xmax, ymax
 
-def show_boxs(image_data, boxss, color=(0, 255, 0)):
+def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
     for j in range(BATCH_SIZE):
         image = T.ToPILImage()(image_data[j, :, :, :])
         draw = ImageDraw.Draw(image)
@@ -68,6 +68,19 @@ def show_boxs(image_data, boxss, color=(0, 255, 0)):
             text = f'{class_of_index(box[4])}'
             draw.rectangle(box[:4], outline=color)
             draw.text((box[0], box[1] - 10), text, fill=color)
+        if mask is not None:
+            if image.mode != 'RGBA':
+                image = image.convert('RGBA')
+            m_t = mask[j, :, :, :]
+            m = T.ToPILImage()(m_t)
+            if m.mode != 'RGBA':
+                m = m.convert('RGBA')
+            r,g,b,a = m.split()
+            a = a.point(lambda i : int(i * 0.5))
+            # m.show()
+            # m.save('/Users/chunsheng/Downloads/ttll.png')
+            
+            image = Image.alpha_composite(image, m)
         image.show()
 def plot_boxs(data, label):
     for i in range(data.size(dim=0)):
@@ -138,4 +151,62 @@ def class_of_index(idx):
         if v == idx:
             return k
     return 'unknown'
-    
+
+'''
+temp = mask_cls(img=img)
+flat_mask = temp.view(-1)
+uniq_key = list(set(flat_mask.tolist()))
+all_mask = []
+for i in uniq_key:
+    if i == 0:
+        continue
+    tt = torch.zeros_like(temp)
+    tt[temp == i] = 1
+    all_mask.append(tt)
+
+for image in all_mask:
+    t = T.ToPILImage()(image)
+    t.show()
+        '''
+def mask_cls(img):
+    w,h = img.size
+    temp = torch.zeros(w*h).reshape([1,h,w])
+    image_data = img.load()
+    for y in range(h):
+        for x in range(w):
+            r,g,b = image_data[x,y][:3]
+            rgb = r + g + b
+            if rgb in [0, 640]:
+                continue
+            temp[0, y, x] = rgb
+    return temp
+def mask_channel_cls(img):
+    w,h = img.size
+    image_data = img.load()
+    chennales = {}
+    for y in range(h):
+        for x in range(w):
+            r,g,b = image_data[x,y][:3]
+            rgb = r + g + b
+            if rgb in [0, 640]:
+                continue
+            key = str(rgb)
+            idx = chennales.get(key, torch.zeros(w*h).reshape([1,h,w]))
+            idx[0, y, x] = rgb
+            chennales[key] = idx
+    return chennales
+
+def single_image(temp):
+    flat_mask = temp.view(-1)
+    uniq_key = list(set(flat_mask.tolist()))
+    all_mask = []
+    for i in uniq_key:
+        if i == 0:
+            continue
+        tt = torch.zeros_like(temp)
+        tt[temp == i] = 1
+        all_mask.append(tt)
+
+    for image in all_mask:
+        t = T.ToPILImage()(image)
+        t.show()

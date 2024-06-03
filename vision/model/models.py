@@ -50,3 +50,27 @@ class ImageResNet(nn.Module):
     def forward(self, x):
         return self.model(x)
     
+class ImageMaskNet(nn.Module):
+    def __init__(self):
+        super(ImageMaskNet, self).__init__()
+        backbone = resnet50(weights=ResNet50_Weights.DEFAULT)
+        backbone.requires_grad_(False)
+        backbone.avgpool = nn.Identity()
+        backbone.fc = nn.Identity()
+        self.features_backbone = backbone
+        self.model = nn.Sequential(
+            Reshape(2048, 14, 14),
+            DetectionNet(2048),
+        )
+        self.mask_pred = nn.Sequential(
+            Reshape(2, 448, 448),
+            nn.ConvTranspose2d(2, 1, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(1, 1, kernel_size=1),
+        )
+    def forward(self, x):
+        feature = self.features_backbone(x)
+        boxs = self.model(feature)
+        mask = self.mask_pred(feature)
+        return boxs, mask
+    

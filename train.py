@@ -5,7 +5,7 @@ from utils.dataset import load_data, ImageLabelDataset,SegmentDataset
 from utils.boxs_util import orignal_boxs_to_tensor
 from loss import SquaredLoss, SquaredMaskLoss
 from torch.utils.data import DataLoader
-from config import LEARNING_RATE
+from config import LEARNING_RATE, BATCH_SIZE
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     train_data_set = ImageLabelDataset()
     train_data_loader = DataLoader(
         train_data_set,
-        batch_size=64,
+        batch_size=BATCH_SIZE,
         num_workers=4,
         persistent_workers=True,
         drop_last=True,
@@ -29,7 +29,7 @@ def main():
     val_data_set = ImageLabelDataset('val')
     val_data_loader = DataLoader(
         val_data_set,
-        batch_size=64,
+        batch_size=BATCH_SIZE,
         num_workers=4,
         persistent_workers=True,
         drop_last=True
@@ -83,7 +83,7 @@ def train_mask():
     train_data_set = SegmentDataset()
     train_data_loader = DataLoader(
         train_data_set,
-        batch_size=64,
+        batch_size=BATCH_SIZE,
         num_workers=2,
         persistent_workers=True,
         drop_last=True,
@@ -92,7 +92,7 @@ def train_mask():
     val_data_set = SegmentDataset('val')
     val_data_loader = DataLoader(
         val_data_set,
-        batch_size=64,
+        batch_size=BATCH_SIZE,
         num_workers=2,
         persistent_workers=True,
         drop_last=True

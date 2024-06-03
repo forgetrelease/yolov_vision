@@ -235,6 +235,3 @@ def resize_mask_image(image):
 
     return temp
         
-        
-   
-    return masks

@@ -110,6 +110,13 @@ class SegmentDataset(Dataset):
         ])
         
     def cacheLabels(self,cache_path, image_set='trainval'):
+        save_dir = os.path.dirname(cache_path)
+        image_save_dir = os.path.join(save_dir, 'images.cache')
+        if not os.path.exists(image_save_dir):
+            os.mkdir(image_save_dir)
+        mask_save_dir = os.path.join(save_dir, 'masks.cache')
+        if not os.path.exists(mask_save_dir):
+            os.mkdir(mask_save_dir)
         def custom_collate(batch):
             imgs = []
             masks = []
@@ -129,11 +136,42 @@ class SegmentDataset(Dataset):
             return imgs, orignal_boxs_to_tensor(targets), original_images
         loader = load_data(custom_collate=custom_collate,image_set=image_set,detect_cls=VOCSegmentation)
         x = {}
+        transform_image = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(IMAGE_SIZE[0]),
+            # transforms.Pad(padding=(0,0,100,0), fill=0, padding_mode='constant'),
+        ])
         for _, target, images in loader:
             for i in range(target.size(dim=0)):
                 labels = target[i,: ,: ,:]
                 image_name = images[i]
                 x[image_name] = labels.numpy()
+                mask_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','SegmentationClass', image_name + '.png')
+                image_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','JPEGImages', image_name + '.jpg')
+                try:
+                    img_save = Path(os.path.join(image_save_dir, image_name + '.npy'))
+                    mask_save = Path(os.path.join(mask_save_dir, image_name + '.npy'))
+                    if os.path.exists(img_save) and os.path.exists(mask_save):
+                        continue
+                    img = Image.open(image_path).convert('RGB')
+                    img = resize_image_(img, transform_image)
+                    mask = Image.open(mask_path).convert('RGBA')
+                    mask =  resize_mask_image(mask)
+                    np.save(img_save, img.numpy())
+                    np.save(mask_save, mask.numpy())
+                    img = Image.open(image_path).convert('RGB')
+                    img = resize_image_(img, transform_image)
+                    mask = Image.open(mask_path).convert('RGBA')
+                    mask =  resize_mask_image(mask)
+                
+                    np.save(img_save, img.numpy())
+                    np.save(mask_save, mask.numpy())
+                    # img_save.with_suffix('.cache.npy').rename(img_save)
+                    # mask_save.with_suffix('.cache.npy').rename(mask_save)
+                except Exception as e:
+                    print(f"保存缓存失败:{e}")
+                    
+                
         try:
             np.save(cache_path, x)
             cache_path.with_suffix('.cache.npy').rename(cache_path)
@@ -155,14 +193,17 @@ class SegmentDataset(Dataset):
     def __len__(self):
         return len(self.img_files)
     def __getitem__(self, index):
-        image_path = self.img_files[index]
-        mask_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','SegmentationClass', image_path + '.png')
-        image_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','JPEGImages', image_path + '.jpg')
-        img = Image.open(image_path).convert('RGB')
-        
-        mask = Image.open(mask_path).convert('RGBA')
-        mask =  resize_mask_image(mask)
-        return self.resize_image(img),torch.from_numpy(self.labels[index]),mask
+        image_name = self.img_files[index]
+        # mask_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','SegmentationClass', image_path + '.png')
+        # image_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','JPEGImages', image_path + '.jpg')
+        # img = Image.open(image_path).convert('RGB')
+        # mask = Image.open(mask_path).convert('RGBA')
+        # mask =  resize_mask_image(mask)
+        image_path = os.path.join(DATA_ROOT, 'images.cache', image_name + '.npy')
+        mask_path = os.path.join(DATA_ROOT, 'masks.cache', image_name + '.npy')
+        mask =  np.load(mask_path)
+        image = np.load(image_path)
+        return torch.from_numpy(image),torch.from_numpy(self.labels[index]),torch.from_numpy(mask)
 
 
 
@@ -234,4 +275,12 @@ def resize_mask_image(image):
                 temp[0,col,row] = channel[0,col,row]
 
     return temp
-        
+def resize_image_(image,transform_image):
+    image = transform_image(image)
+    w, h = image.shape[-1], image.shape[-2]
+    padding = (0,0,h-w ,0) if w < h else (0,0,0,w-h)
+    transform = transforms.Compose([
+        transforms.Pad(padding=padding, fill=0, padding_mode='constant'),
+        transforms.Resize(IMAGE_SIZE),
+    ])
+    return transform(image)

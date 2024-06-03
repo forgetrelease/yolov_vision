@@ -113,10 +113,10 @@ class SegmentDataset(Dataset):
         save_dir = os.path.dirname(cache_path)
         image_save_dir = os.path.join(save_dir, 'images.cache')
         if not os.path.exists(image_save_dir):
-            os.mkdir(image_save_dir)
+            os.makedirs(image_save_dir)
         mask_save_dir = os.path.join(save_dir, 'masks.cache')
         if not os.path.exists(mask_save_dir):
-            os.mkdir(mask_save_dir)
+            os.makedirs(mask_save_dir)
         def custom_collate(batch):
             imgs = []
             masks = []

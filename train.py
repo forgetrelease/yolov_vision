@@ -84,7 +84,7 @@ def train_mask():
     train_data_loader = DataLoader(
         train_data_set,
         batch_size=64,
-        num_workers=4,
+        num_workers=2,
         persistent_workers=True,
         drop_last=True,
         shuffle=True
@@ -93,7 +93,7 @@ def train_mask():
     val_data_loader = DataLoader(
         val_data_set,
         batch_size=64,
-        num_workers=4,
+        num_workers=2,
         persistent_workers=True,
         drop_last=True
         )

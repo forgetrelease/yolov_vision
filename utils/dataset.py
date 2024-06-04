@@ -227,7 +227,7 @@ def xml_to_dic(node):
             voc_dict[node.tag] = text
     return voc_dict
 
-def annotation_filename(file_name):
+def annotation_filename(file_name,resize=IMAGE_SIZE):
     xml_file = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','Annotations', file_name + '.xml')
     obj = parse_voc_annotation(xml_file)
     annotation = obj['annotation']
@@ -236,7 +236,7 @@ def annotation_filename(file_name):
     for obj in annotation['object']:
         bbox = obj['bndbox']
         xmin, ymin, xmax, ymax = int(bbox['xmin']), int(bbox['ymin']), int(bbox['xmax']), int(bbox['ymax'])
-        xmin, ymin, xmax, ymax = normalize_box((xmin, ymin, xmax, ymax), size, IMAGE_SIZE)
+        xmin, ymin, xmax, ymax = normalize_box_mask_scale((xmin, ymin, xmax, ymax), size, IMAGE_SIZE)
         # boxs.append({'name': obj['name'], 'bbox': [xmin, ymin, xmax, ymax]})
         boxs.append([xmin, ymin, xmax, ymax, OBJ_INDEX[obj['name']]])
     return boxs

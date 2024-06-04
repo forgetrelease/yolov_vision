@@ -58,6 +58,16 @@ def normalize_box(origin_points, origin_size, target_size):
     xmax = int(target_w * xmax * 1.0 / origin_w)
     ymax = int(target_h * ymax * 1.0 / origin_h)
     return xmin, ymin, xmax, ymax
+def normalize_box_mask_scale(origin_points, origin_size, target_size):
+    xmin, ymin, xmax, ymax = origin_points
+    origin_w, origin_h = origin_size
+    target_w, target_h = target_size
+    scale = (target_h * 1.0 / origin_h) if origin_w < origin_h else (1.0 * target_w / origin_w)
+    xmin = int(scale * xmin)
+    ymin = int(scale * ymin)
+    xmax = int(scale * xmax)
+    ymax = int(scale * ymax)
+    return xmin, ymin, xmax, ymax
 
 def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
     for j in range(image_data.size(dim=0) ):
@@ -100,12 +110,13 @@ def plot_boxs(data, label):
                     if confidence > MIN_CONFIDENCE:
                         print(cls_idx, confidence)
                         boxs = pred_boxs[row, col, 20+k*5:20+(k+1)*5].tolist()
+                        print(boxs)
                         center_x, center_y, w, h, _ = boxs
                         xcenter = center_x * grid_w + col * grid_w
                         ycenter =center_y* grid_h + row * grid_h
                         box_w = w * grid_w
                         box_h = h* grid_h
-                        all_bosx.append([xcenter - box_w/2, ycenter-box_h/2, box_w, box_h, cls_idx])
+                        all_bosx.append([xcenter - box_w/2, ycenter-box_h/2, xcenter + box_w/2, ycenter + box_h/2, cls_idx])
     if len(all_bosx)>0:
         # boxs = torch.tensor(all_bosx)
         # all_bosx = 

@@ -13,7 +13,7 @@ def pred_mask(images_path):
     model = ImageMaskNet().to(device)
     
     try:
-        model.load_state_dict(torch.load('best-mask.pth'))
+        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/best-mask.pth', map_location=device))
     except Exception as e:
         print("加载模型出错", e)
         return
@@ -30,7 +30,7 @@ def pred_mask(images_path):
     print(masks)
     masks[masks<0] = 0
     plot_boxs(img, results)
-    single_image(masks)
+    # single_image(masks[0, :, :, :])
     
 
 if __name__ == '__main__':

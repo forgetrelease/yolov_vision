@@ -60,7 +60,7 @@ def normalize_box(origin_points, origin_size, target_size):
     return xmin, ymin, xmax, ymax
 
 def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
-    for j in range(BATCH_SIZE):
+    for j in range(image_data.size(dim=0) ):
         image = T.ToPILImage()(image_data[j, :, :, :])
         draw = ImageDraw.Draw(image)
         boxs = boxss[j]
@@ -83,8 +83,36 @@ def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
             image = Image.alpha_composite(image, m)
         image.show()
 def plot_boxs(data, label):
+    width, height = IMAGE_SIZE
+    grid_w = width / 7
+    grid_h = height / 7
+    all_bosx = []
     for i in range(data.size(dim=0)):
-        print(i)
+        image = data[i, :, :, :]
+        # image = T.ToPILImage()(image)
+        # image.show()
+        pred_boxs = label[i, :, :, :]
+        for col in range(7):
+            for row in range(7):
+                cls_idx = torch.argmax(pred_boxs[row, col, :20]).item()
+                for k in range(2):
+                    confidence = pred_boxs[row, col, 20+k*5+4].item()
+                    if confidence > MIN_CONFIDENCE:
+                        print(cls_idx, confidence)
+                        boxs = pred_boxs[row, col, 20+k*5:20+(k+1)*5].tolist()
+                        center_x, center_y, w, h, _ = boxs
+                        xcenter = center_x * grid_w + col * grid_w
+                        ycenter =center_y* grid_h + row * grid_h
+                        box_w = w * grid_w
+                        box_h = h* grid_h
+                        all_bosx.append([xcenter - box_w/2, ycenter-box_h/2, box_w, box_h, cls_idx])
+    if len(all_bosx)>0:
+        # boxs = torch.tensor(all_bosx)
+        # all_bosx = 
+        show_boxs(image_data=data, boxss=[all_bosx], color=(0, 255, 0))
+                        
+        
+                        
 # (xmin, ymin, xmax, ymax) -> 7 * 7 * 30
 def orignal_boxs_to_tensor(batch_boxss):
     width, height = IMAGE_SIZE

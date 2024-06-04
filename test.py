@@ -1,4 +1,4 @@
-from utils.dataset import load_data, ImageLabelDataset, SegmentDataset, annotation_filename
+from utils.dataset import load_data, ImageLabelDataset, SegmentDataset, annotation_filename, resize_image_,resize_mask_image
 from utils.boxs_util import *
 from torch.utils.data import DataLoader
 from PIL import Image
@@ -8,6 +8,16 @@ import torch
 import torch.nn.functional as F
 if __name__ == "__main__":
 
+    transform_image = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize(IMAGE_SIZE),
+        # transforms.Pad(padding=(0,0,100,0), fill=0, padding_mode='constant'),
+    ])
+    mg = Image.open('/Users/chunsheng/Desktop/workspace/pytorch_study/yolov_vision/data/VOCdevkit/VOC2007/SegmentationClass/000129.png').convert('RGB')
+    data = resize_mask_image(mg)
+    image = T.ToPILImage()(data)
+    image.show()
+    
 
     # 假设我们有一批4个样本的logits和对应的真实标签
     logits = torch.tensor([1.0, -2.0, 3.0, -4.0], dtype=torch.float32)

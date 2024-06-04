@@ -5,7 +5,7 @@ from utils.dataset import load_data, ImageLabelDataset,SegmentDataset
 from utils.boxs_util import orignal_boxs_to_tensor
 from loss import SquaredLoss, SquaredMaskLoss
 from torch.utils.data import DataLoader
-from config import LEARNING_RATE, BATCH_SIZE, DATA_ROOT
+from config import LEARNING_RATE, BATCH_SIZE, DATA_ROOT,EPOCHS
 import os,shutil
 
 
@@ -40,7 +40,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     best_loss = float('inf')
-    for epoch in tqdm(range(40), desc='Epoch'):
+    for epoch in tqdm(range(EPOCHS), desc='Epoch'):
         train_loss = 0.0
         model.train()
         for image, target in tqdm(train_data_loader, desc='Train', leave=False):
@@ -105,7 +105,7 @@ def train_mask():
     
     
     best_loss = float('inf')
-    for epoch in tqdm(range(40), desc='Epoch'):
+    for epoch in tqdm(range(EPOCHS), desc='Epoch'):
         train_loss = 0.0
         model.train()
         for image, target, mask in tqdm(train_data_loader, desc='Train', leave=False):

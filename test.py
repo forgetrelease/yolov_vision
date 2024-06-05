@@ -39,7 +39,7 @@ def test_loss():
     print(loss(pred, target))
     
 if __name__ == "__main__":
-    # test_dataset()
-    test_loss()
+    test_dataset()
+    #test_loss()
     
     

@@ -4,7 +4,9 @@ from vision.model.models import ImageMaskNet
 from config import LEARNING_RATE,IMAGE_SIZE
 from PIL import Image
 from torchvision import transforms
-from utils.boxs_util import single_image, plot_boxs
+from utils.boxs_util import single_image, plot_boxs, show_boxs
+from utils.dataset import resize_image_, annotation_filename
+import os
 
 
 def pred_mask(images_path):
@@ -18,21 +20,32 @@ def pred_mask(images_path):
         print("加载模型出错", e)
         return
     img = Image.open(images_path).convert('RGB')
-    transofrm = transforms.Compose([
+    transform_image = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize(IMAGE_SIZE),
+        transforms.Resize(IMAGE_SIZE[0]),
+        # transforms.Pad(padding=(0,0,100,0), fill=0, padding_mode='constant'),
     ])
-    img = transofrm(img)
+    
+    
+    img = resize_image_(img,transform_image=transform_image)
     img = img.to(device)
     img = img.unsqueeze(0)
+    
+    
     results, masks = model(img)
-    print(results)
-    print(masks)
+    # print(results)
+    # print(masks)
     masks[masks<0] = 0
-    plot_boxs(img, results)
+    plot_boxs(img, results,save=True)
     # single_image(masks[0, :, :, :])
     
 
 if __name__ == '__main__':
     # 加载模型
-    pred_mask('./data/VOCdevkit/VOC2007/JPEGImages/000033.jpg')
+    images_root = './data/VOCdevkit/VOC2007/JPEGImages'
+    for root, folders, files in os.walk(images_root):
+        for file in files:
+            if file.endswith('.jpg'):
+                print(file)
+                pred_mask(os.path.join(root, file))
+                

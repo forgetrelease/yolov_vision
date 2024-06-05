@@ -3,6 +3,7 @@ from PIL import ImageDraw, ImageFont, Image
 import torchvision.transforms as T
 from config import *
 import torch
+import os
 
 # (batch, 7, 7, 30) 
 def get_iou(pred, target):
@@ -69,13 +70,14 @@ def normalize_box_mask_scale(origin_points, origin_size, target_size):
     ymax = int(scale * ymax)
     return xmin, ymin, xmax, ymax
 
-def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
+def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None, save_local=False):
+    
     for j in range(image_data.size(dim=0) ):
         image = T.ToPILImage()(image_data[j, :, :, :])
         draw = ImageDraw.Draw(image)
         boxs = boxss[j]
         for box in boxs:
-            text = f'{class_of_index(box[4])}'
+            text = f'{class_of_index(box[4])},{box[5]:.2f}'
             draw.rectangle(box[:4], outline=color)
             draw.text((box[0], box[1] - 10), text, fill=color)
         if mask is not None:
@@ -91,14 +93,27 @@ def show_boxs(image_data, boxss, color=(0, 255, 0),mask=None):
             # m.save('/Users/chunsheng/Downloads/ttll.png')
             
             image = Image.alpha_composite(image, m)
-        image.show()
-def plot_boxs(data, label):
+        if save_local:
+            save_image_to_local(image)
+        else:
+            image.show()
+def save_image_to_local(image):
+    save_name = os.path.join(os.path.dirname(DATA_ROOT), 'results')
+    if not os.path.exists(save_name):
+        os.mkdir(save_name)
+    save_name = os.path.join(save_name, 'predict.png')
+    idx = 0
+    while os.path.exists(save_name):
+        idx += 1
+        save_name = os.path.join(os.path.dirname(save_name), 'predict_%d.png' % idx)
+    image.save(save_name)
+def plot_boxs(data, label, masks=None,save=False):
     width, height = IMAGE_SIZE
     grid_w = width / 7
     grid_h = height / 7
     all_bosx = []
     for i in range(data.size(dim=0)):
-        image = data[i, :, :, :]
+        # image = data[i, :, :, :]
         # image = T.ToPILImage()(image)
         # image.show()
         pred_boxs = label[i, :, :, :]
@@ -116,11 +131,11 @@ def plot_boxs(data, label):
                         ycenter =center_y* grid_h + row * grid_h
                         box_w = w * grid_w
                         box_h = h* grid_h
-                        all_bosx.append([xcenter - box_w/2, ycenter-box_h/2, xcenter + box_w/2, ycenter + box_h/2, cls_idx])
+                        all_bosx.append([xcenter - box_w/2, ycenter-box_h/2, xcenter + box_w/2, ycenter + box_h/2, cls_idx, confidence])
     if len(all_bosx)>0:
         # boxs = torch.tensor(all_bosx)
         # all_bosx = 
-        show_boxs(image_data=data, boxss=[all_bosx], color=(0, 255, 0))
+        show_boxs(image_data=data, boxss=[all_bosx], color=(0, 255, 0),mask=masks, save_local=save)
                         
         
                         
@@ -233,7 +248,12 @@ def mask_channel_cls(img):
             idx = chennales.get(key, torch.zeros(w*h).reshape([1,h,w]))
             idx[0, y, x] = rgb
             chennales[key] = idx
-    return chennales
+    temp = {}
+    for k in chennales.keys():
+        key = float(k)/(255*3)
+        temp[key] = chennales[k]
+        
+    return temp
 
 def single_image(temp):
     flat_mask = temp.view(-1)

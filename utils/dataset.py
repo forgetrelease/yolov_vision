@@ -284,3 +284,156 @@ def resize_image_(image,transform_image):
         transforms.Resize(IMAGE_SIZE),
     ])
     return transform(image)
+
+############## 重构部分 ##############
+def box_from_annotation(file_name):
+    xml_file = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','Annotations', file_name + '.xml')
+    obj = parse_voc_annotation(xml_file)
+    annotation = obj['annotation']
+    size = (int(annotation['size']['width']), int(annotation['size']['height']))
+    boxs = []
+    for obj in annotation['object']:
+        bbox = obj['bndbox']
+        xmin, ymin, xmax, ymax = int(bbox['xmin']), int(bbox['ymin']), int(bbox['xmax']), int(bbox['ymax'])
+        boxs.append([xmin, ymin, xmax, ymax, OBJ_INDEX[obj['name']]])
+    return boxs, size
+def annotation_from_box(image_size, boxs):
+    w,h = image_size
+    width, height = IMAGE_SIZE
+    xy_rate =  width/w if w > h else height/h
+    
+    grid_w = width / 7
+    grid_h = height / 7
+    box_cell = {}
+    rectangle_truth = torch.zeros((7, 7, 30))
+    for box in boxs:
+        xmin, ymin, xmax, ymax = box[:4]
+        xmin, ymin, xmax, ymax = xmin*xy_rate, ymin*xy_rate, xmax*xy_rate, ymax*xy_rate
+        centx = (xmin + xmax) / 2
+        centy = (ymin + ymax) / 2
+        col = int(centx // grid_w)
+        row = int(centy // grid_h)
+        if 0 <= col < 7 and 0 <= row < 7:
+            box_idx = box_cell.get((row, col), 0)
+            if box_idx >= 2:
+                continue
+            cls_idx = torch.zeros(20)
+            cls_idx[box[4]] = 1.0
+            rectangle_truth[row, col, :20] = cls_idx
+            box_truth = ((centx - col * grid_w) / grid_w,
+                    (centy - row * grid_h) / grid_h, 
+                    (xmax - xmin)  / grid_w,
+                    (ymax - ymin)  / grid_h,
+                    1.0
+            )
+            start_idx = 20 + box_idx * 5
+            rectangle_truth[row, col, start_idx:start_idx+5] = torch.tensor(box_truth)
+            box_cell[(row, col)] = box_idx + 1
+    return rectangle_truth
+            
+        
+    
+    
+    
+def resize_image_mask_target(image, target, mask=None):
+    # w, h = image.shape[-1], image.shape[-2]
+    w, h = target[0][5]
+    padding = (0,0,h-w ,0) if w < h else (0,0,0,w-h)
+    transform = transforms.Compose([
+        transforms.Pad(padding=padding, fill=0, padding_mode='constant'),
+        transforms.Resize(IMAGE_SIZE),
+    ])
+    # 最短边补充0到 IMAGE_SIZE[0]
+    image = transform(image)
+    target = annotation_from_box((w,h), target)
+    
+    return image, target, mask
+
+class DetectBase(Dataset):
+    def __init__(self, source):
+        super(DetectBase).__init__()
+        self.image_files = []
+        for root, folders, files in os.walk(source):
+            for file in files:
+                if file.endswith('.npy'):
+                    self.image_files.append(os.path.join(root,file))
+        self.transform = transforms.Compose([
+            transforms.Resize(IMAGE_SIZE),
+            transforms.ToTensor(),
+        ])
+        self.transform_mask = transforms.Compose([
+            
+        ])
+    def __len__(self):
+        return len(self.image_files)
+    def __getitem__(self, index):
+        image_file = self.image_files[index]
+        image = np.load(image_file,allow_pickle=True).item()
+        return self.format_ceche(image)
+    def format_ceche(self, cache):
+        return torch.from_numpy(cache)
+    
+
+class BoxDetect(DetectBase):
+    def format_ceche(self, cache):
+        image = cache['image']
+        target = cache['target']
+        return torch.from_numpy(image), torch.from_numpy(target)
+    @classmethod
+    def prepare_voc_data(self, save_dir, image_set='trainval'):
+        save_dir = os.path.join(save_dir, 'box.cache', image_set)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+    
+        def custom_collate(batch):
+            imgs = []
+            targets = []
+            original_images = []
+            for (image, info) in batch:
+                annotation = info['annotation']
+                imgs.append(image)
+                file_name=  annotation['filename']
+                idx = file_name.index('.')
+                file_name = file_name[:idx]
+                original_images.append(file_name)
+                size = (int(annotation['size']['width']), int(annotation['size']['height']))
+                boxs = []
+                for obj in annotation['object']:
+                    bbox = obj['bndbox']
+                    xmin, ymin, xmax, ymax = int(bbox['xmin']), int(bbox['ymin']), int(bbox['xmax']), int(bbox['ymax'])
+                    boxs.append([xmin, ymin, xmax, ymax, OBJ_INDEX[obj['name']], size])
+               
+                targets.append(boxs)
+                
+            # imgs = torch.stack(imgs,dim=0)
+            return imgs, targets, original_images
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            # transforms.Resize(IMAGE_SIZE),
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        dataset = VOCDetection(DATA_ROOT, download=True, year='2007', image_set=image_set,transform=transform,transforms=None,target_transform=None)
+        data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True,collate_fn=custom_collate)
+        for images, target, image_names in data_loader:
+            for i in range(len(target)):
+                x = {}
+                labels = target[i]
+                image_name = image_names[i]
+                image = images[i]
+                # x[image_name] = labels.numpy()
+                # mask_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','SegmentationClass', image_name + '.png')
+                # image_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','JPEGImages', image_name + '.jpg')
+                try:
+                    img_save = Path(os.path.join(save_dir, image_name + '.npy'))
+                    if os.path.exists(img_save):
+                        continue
+                    # img = Image.open(image_path).convert('RGB')
+                    image, labels,_ = resize_image_mask_target(image=image, target=labels)
+                    x['image'] = image.numpy()
+                    x['target'] = labels.numpy()
+                    np.save(img_save, x)
+                except Exception as e:
+                    print(f"保存缓存失败:{e}")
+        return save_dir
+    
+    

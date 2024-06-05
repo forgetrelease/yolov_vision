@@ -44,10 +44,10 @@ def show_box_masks(image, target, mask=None):
     image.show()
     
 def save_loss_rate(data,save_path):
-    plt.figure()
+    # plt.figure()
     for key in data:
         y = data[key]
-        x = [i for i in range(len(y))]
+        x = [i+1 for i in range(len(y))]
         plt.plot(x, y, label=key)
         
     plt.title('Loss Rate')

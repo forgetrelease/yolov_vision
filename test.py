@@ -9,6 +9,10 @@ def test_dataset():
     if not os.path.exists(save_dir):
         save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='val')
         print(save_dir)
+    save_dir = os.path.join(DATA_ROOT, 'box.cache', 'trainval')
+    if not os.path.exists(save_dir):
+        save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
+        print(save_dir)
     val_data_set = BoxDetect('./data/box.cache/val')
     val_data_loader = DataLoader(
         val_data_set,
@@ -21,7 +25,7 @@ def test_dataset():
     for image, target in tqdm(val_data_loader, desc='Validate', leave=False):
         # for i in range(20):
         #     show_box_masks(image[i,:,:,:], target[i,:,:,:])
-        print(loss_func(pred=target, target=target))
+        print(loss_func(target, target))
         break
 
 def test_loss():

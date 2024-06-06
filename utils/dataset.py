@@ -392,8 +392,8 @@ class BoxDetect(DetectBase):
             original_images = []
             for (image, info) in batch:
                 annotation = info['annotation']
-                if int(annotation['segmented']) == 0:
-                    continue
+                # if int(annotation['segmented']) == 0:
+                #     continue
                 imgs.append(image)
                 file_name=  annotation['filename']
                 idx = file_name.index('.')

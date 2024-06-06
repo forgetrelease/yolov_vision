@@ -41,7 +41,8 @@ def show_box_masks(image, target, mask=None):
         draw.rectangle(box[:4], outline=color)
         draw.text((box[0], box[1] - 11 if box[1] - 11 > 0 else box[1] + 1), text, fill=color)
     
-    image.show()
+    # image.show()
+    return image
     
 def save_loss_rate(data,save_path):
     # plt.figure()

@@ -336,8 +336,8 @@ def annotation_from_box(image_size, boxs):
     
     
 def resize_image_mask_target(image, target, mask=None):
-    # w, h = image.shape[-1], image.shape[-2]
-    w, h = target[0][5]
+    w, h = image.shape[-1], image.shape[-2]
+    # w, h = target[0][5]
     padding = (0,0,h-w ,0) if w < h else (0,0,0,w-h)
     transform = transforms.Compose([
         transforms.Pad(padding=padding, fill=0, padding_mode='constant'),
@@ -345,7 +345,8 @@ def resize_image_mask_target(image, target, mask=None):
     ])
     # 最短边补充0到 IMAGE_SIZE[0]
     image = transform(image)
-    target = annotation_from_box((w,h), target)
+    if target:
+        target = annotation_from_box((w,h), target)
     
     return image, target, mask
 
@@ -391,6 +392,8 @@ class BoxDetect(DetectBase):
             original_images = []
             for (image, info) in batch:
                 annotation = info['annotation']
+                if int(annotation['segmented']) == 0:
+                    continue
                 imgs.append(image)
                 file_name=  annotation['filename']
                 idx = file_name.index('.')

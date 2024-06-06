@@ -200,14 +200,17 @@ class BoxLoss(nn.Module):
             obj_ij * box_attr(input, 1),
             obj_ij * box_attr(target, 1)
         )
+        input_width = box_attr(input, 2)
         w_loss = mse_loss(
-            obj_ij * box_attr(input, 2),
-            obj_ij * box_attr(target, 2)
+            obj_ij * torch.sign(input_width)*torch.sqrt(torch.abs(input_width))+EPSILON,
+            obj_ij * torch.sqrt(box_attr(target, 2))
         )
+        input_height = box_attr(input, 3)
         h_loss = mse_loss(
-            obj_ij * box_attr(input, 3),
-            obj_ij * box_attr(target, 3)
+            obj_ij * torch.sign(input_height)*torch.sqrt(torch.abs(input_height))+EPSILON,
+            obj_ij * torch.sqrt(box_attr(target, 3))
         )
+        print(f"class_loss:{class_loss.item()}, confidence_loss:{confidence_loss.item()}, no_confidence_loss:{no_confidence_loss.item()}, x_loss:{x_loss.item()}, y_loss:{y_loss.item()}, w_loss:{w_loss.item()}, h_loss:{h_loss.item()}")
         total_loss = class_loss \
                     + confidence_loss \
                     + self.noobj_loss * no_confidence_loss \

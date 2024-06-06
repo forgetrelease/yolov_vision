@@ -3,12 +3,13 @@ from config import *
 from tqdm import tqdm
 from utils.vision import show_box_masks
 from loss import *
+from utils.vision import save_loss_rate
 
 def test_dataset():
-    save_dir = os.path.join(DATA_ROOT, 'box.cache', 'val')
-    if not os.path.exists(save_dir):
-        save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='val')
-        print(save_dir)
+    # save_dir = os.path.join(DATA_ROOT, 'box.cache', 'val')
+    # if not os.path.exists(save_dir):
+    #     save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='val')
+    #     print(save_dir)
     save_dir = os.path.join(DATA_ROOT, 'box.cache', 'trainval')
     if not os.path.exists(save_dir):
         save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
@@ -39,6 +40,9 @@ def test_loss():
     print(loss(pred, target))
     
 if __name__ == "__main__":
+    data = {"train":[10,89,3,4,5,5,1,1,1,1,],
+            "val":  [90,29,9,4,5,5,2,1,1,1,],}
+    # save_loss_rate(data,'loss.png')
     test_dataset()
     #test_loss()
     

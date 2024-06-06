@@ -6,10 +6,10 @@ from loss import *
 from utils.vision import save_loss_rate
 
 def test_dataset():
-    # save_dir = os.path.join(DATA_ROOT, 'box.cache', 'val')
-    # if not os.path.exists(save_dir):
-    #     save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='val')
-    #     print(save_dir)
+    save_dir = os.path.join(DATA_ROOT, 'box.cache', 'val')
+    if not os.path.exists(save_dir):
+        save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='val')
+        print(save_dir)
     save_dir = os.path.join(DATA_ROOT, 'box.cache', 'trainval')
     if not os.path.exists(save_dir):
         save_dir = BoxDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')

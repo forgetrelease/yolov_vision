@@ -155,7 +155,6 @@ def train_mask():
                     test_loss += loss.item() / len(val_data_loader)
                     test_mask_loss += m_loss.item() / len(val_data_loader)
                     del image, target
-                    del image, target
             if best_loss > test_loss:
                 best_loss = test_loss
                 print('保存最佳模型：{}'.format(best_loss))

@@ -1,7 +1,7 @@
 from utils.dataset import *
 from config import *
 from tqdm import tqdm
-from utils.vision import show_box_masks
+from utils.vision import show_box_masks, parse_rgb_allImage
 from loss import *
 from utils.vision import save_loss_rate
 
@@ -24,9 +24,9 @@ def test_dataset():
         )
     loss_func = BoxLoss()
     for image, target in tqdm(val_data_loader, desc='Validate', leave=False):
-        # for i in range(20):
-        #     show_box_masks(image[i,:,:,:], target[i,:,:,:])
-        print(loss_func(target, target))
+        for i in range(20):
+            show_box_masks(image[i,:,:,:], target[i,:,:,:])
+        # print(loss_func(target, target))
         break
 
 def test_loss():
@@ -38,12 +38,58 @@ def test_loss():
     pred = torch.tensor(input).reshape(1,1,1,13)
     target =torch.tensor(target).reshape(1,1,1,13)
     print(loss(pred, target))
+def test_mask():
+    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')  
+    val_data_set = MaskDetect('./data/box-mask.cache/val')
+    val_data_loader = DataLoader(
+        val_data_set,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        persistent_workers=True,
+        drop_last=True
+        )
+    for image, target, mask in tqdm(val_data_loader, desc='Validate', leave=False):
+        for i in range(12):
+            show_box_masks(image[i,:,:,:], target[i,:,:,:], mask[i,:,:,:],color=(1,0,0))
+        break
     
+def exp_rgbs():
+    rgbs = torch.tensor([11,12,3])
+    # temp = []
+    # for i in rgbs:
+    #     temp.append(i.repeat(10,10))
+    # rgbs = torch.stack(temp)
+    # return rgbs          
+    print(rgbs.shape[-1])
+    return rgbs.unsqueeze(1).unsqueeze(1).repeat((1,10,10)).expand(3, 10, 10)
+                
 if __name__ == "__main__":
-    data = {"train":[10,89,3,4,5,5,1,1,1,1,],
-            "val":  [90,29,9,4,5,5,2,1,1,1,],}
-    # save_loss_rate(data,'loss.png')
-    test_dataset()
-    #test_loss()
+
+    uinque_rgb = parse_rgb_allImage(black_rgbs=[1.0,])
+    print(uinque_rgb.tolist())
+    np.save('./rgbs.npy', uinque_rgb.numpy())
+    rgb = np.load('./rgbs.npy', allow_pickle=True)
+    print(torch.from_numpy(rgb).tolist())
+    # test_dataset()
+    test_mask()
+    a = [1,2,3,4,5]
+    b = [2,3,4,9,8]
+    c = [4,4,4,4,4]
+    d = torch.Tensor([a,b,c])
+    print(d)
+    temp = torch.zeros_like(d)
+    max_arg = torch.max(d, dim=1)
+    soft_max = torch.softmax(d, dim=1)
+    ss = torch.max(soft_max, dim=1)
+    print(ss)
+    print(max_arg)
+    print(max_arg[1].unsqueeze(1))
+    # temp[max_arg[1]] = 1
+    print(temp)
+    
+    print(d.shape)
+    print()
+    print(torch.argmax(d, dim=1))
+    test_mask()
     
     

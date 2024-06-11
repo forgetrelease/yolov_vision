@@ -39,7 +39,8 @@ def test_loss():
     target =torch.tensor(target).reshape(1,1,1,13)
     print(loss(pred, target))
 def test_mask():
-    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')  
+    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
+    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
     val_data_set = MaskDetect('./data/box-mask.cache/val')
     val_data_loader = DataLoader(
         val_data_set,
@@ -64,32 +65,52 @@ def exp_rgbs():
     return rgbs.unsqueeze(1).unsqueeze(1).repeat((1,10,10)).expand(3, 10, 10)
                 
 if __name__ == "__main__":
-
-    uinque_rgb = parse_rgb_allImage(black_rgbs=[1.0,])
-    print(uinque_rgb.tolist())
-    np.save('./rgbs.npy', uinque_rgb.numpy())
-    rgb = np.load('./rgbs.npy', allow_pickle=True)
-    print(torch.from_numpy(rgb).tolist())
-    # test_dataset()
     test_mask()
     a = [1,2,3,4,5]
     b = [2,3,4,9,8]
     c = [4,4,4,4,4]
     d = torch.Tensor([a,b,c])
-    print(d)
-    temp = torch.zeros_like(d)
-    max_arg = torch.max(d, dim=1)
-    soft_max = torch.softmax(d, dim=1)
-    ss = torch.max(soft_max, dim=1)
-    print(ss)
-    print(max_arg)
-    print(max_arg[1].unsqueeze(1))
-    # temp[max_arg[1]] = 1
-    print(temp)
+    rgb = torch.Tensor(a)
     
-    print(d.shape)
-    print()
-    print(torch.argmax(d, dim=1))
-    test_mask()
+    c = rgb.unsqueeze(1).unsqueeze(1).repeat((1,448,448)).expand(5,448,448)
+    
+    # e =c.unsqueeze(0).repeat((32,1,1,1)).expand(32,5,448,448)
+    # e1 = e[0,:, :, :]
+    # result = e1==c
+    # print(result.flatten().unique())
+    # print(torch.equal(e1, c))
+    
+    mask = torch.Tensor(b)
+    cc =mask.unsqueeze(1).unsqueeze(1).repeat((1,448,448)).expand(5,448,448)
+    cf = torch.softmax(cc, dim=0)
+    cf = torch.argmax(cf, dim=0)
+    tg = cc.gather(dim=0, index=cf.unsqueeze(0).expand_as(cc))
+    print(tg[:, 0, 0])
+    th = torch.mean(tg, dim=0)
+    print(th[0, 0])
+    
+    
+    
+    e = torch.stack((c,cc))
+    print(e.shape)
+    print(e[0,:,0,0])
+    print(e[1,:,0,0])
+    f = torch.softmax(e,dim=1)
+    f = torch.argmax(f,dim=1)
+    print(f.shape)
+    # mask_target_cls = rgb_map.gather(dim=0,index=mask_target_max_arg.unsqueeze(0).expand_as(rgb_map))
+       
+    g = e.gather(dim=1,index=f.unsqueeze(1).expand_as(e))
+    print(g.shape)
+    print(g[0,:,0,0])
+    print(g[1,:,0,0])
+    h = torch.sum(g, dim=1)
+    print(h.shape)
+    print(h[0, 0, 0])
+    print(h[1, 0, 0])
+    
+
+    
+    
     
     

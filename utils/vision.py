@@ -98,7 +98,8 @@ def show_box_masks(image, target, mask=None, color=(1,0,0)):
         mask_image = torch.softmax(mask, dim=0)
         arg_max = torch.argmax(mask_image, dim=0)
         max_ones_idx = rgb_map.gather(dim=0,index=arg_max.unsqueeze(0).expand_as(rgb_map))
-        image_data = torch.sum(max_ones_idx, dim=0)
+        # 这里所有值是一样的，所以是求平均而不是求和
+        image_data = torch.mean(max_ones_idx, dim=0)
         mask_img = T.ToPILImage()(image_data).convert('RGBA')
         image = add_alphe_mask(image=image, mask=mask_img,color=color)
     image.show()

@@ -363,7 +363,7 @@ def resize_image_mask_target(image, target, mask=None, rgb_map=None):
         for i in range(rgb_map.shape[-1]):
             rrgb = rgb_map[i]
             temp = torch.zeros_like(mask)
-            temp[mask==rrgb] = rrgb
+            temp[mask==rrgb] = 1.0
             channels[i,:,:] = temp[0, :, :]
         
         # 调整mask大小

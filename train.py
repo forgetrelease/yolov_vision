@@ -7,9 +7,10 @@ from loss import BoxLoss, SquaredMaskLoss
 from torch.utils.data import DataLoader
 from config import LEARNING_RATE, BATCH_SIZE, DATA_ROOT,EPOCHS,NUM_WORKERS
 import os,shutil
-from utils.vision import save_loss_rate
+from utils.vision import save_loss_rate,parse_rgb_allImage
 import argparse
 import sys
+import numpy as np
 
 def train_box():
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -186,6 +187,12 @@ def prepare_mask_data():
     cache = os.path.join(DATA_ROOT, 'box-mask.cache')
     if os.path.exists(cache):
         shutil.rmtree(cache)
+    cache = os.path.join('./rgbs.npy')
+    if os.path.exists(cache):
+        os.remove(cache)
+    
+    uinque_rgb = parse_rgb_allImage(black_rgbs=[1.0,])
+    np.save('./rgbs.npy', uinque_rgb.numpy())
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
 def main(opt):

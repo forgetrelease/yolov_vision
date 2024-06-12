@@ -11,7 +11,7 @@ from utils.vision import save_loss_rate
 import argparse
 import sys
 
-def main():
+def train_box():
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
     model = ImageResNet().to(device)
@@ -179,6 +179,11 @@ def prepare_mask_data():
         shutil.rmtree(cache)
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
+def main(opt):
+    if opt.cache_data:
+        prepare_mask_data()
+        return
+    train_mask(only_box=opt.only_box)
 if __name__ == '__main__':
     # main()
     # cache = os.path.join(DATA_ROOT, 'images.cache')
@@ -203,8 +208,4 @@ if __name__ == '__main__':
     parser.add_argument('--only_box', action='store_true', help='only train box regression')
     parser.add_argument('--cache_data', action='store_true', help='cache data')
     opt = parser.parse_args()
-    if opt.cache_data:
-        cache = os.path.join(DATA_ROOT, 'images.cache')
-    else:
-        pass
-    train_mask(only_box=opt.only_box)
+    main(opt)

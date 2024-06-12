@@ -65,50 +65,18 @@ def exp_rgbs():
     return rgbs.unsqueeze(1).unsqueeze(1).repeat((1,10,10)).expand(3, 10, 10)
                 
 if __name__ == "__main__":
-    test_mask()
+    # test_mask()
     a = [1,2,3,4,5]
     b = [2,3,4,9,8]
     c = [4,4,4,4,4]
     d = torch.Tensor([a,b,c])
-    rgb = torch.Tensor(a)
-    
-    c = rgb.unsqueeze(1).unsqueeze(1).repeat((1,448,448)).expand(5,448,448)
-    
-    # e =c.unsqueeze(0).repeat((32,1,1,1)).expand(32,5,448,448)
-    # e1 = e[0,:, :, :]
-    # result = e1==c
-    # print(result.flatten().unique())
-    # print(torch.equal(e1, c))
-    
-    mask = torch.Tensor(b)
-    cc =mask.unsqueeze(1).unsqueeze(1).repeat((1,448,448)).expand(5,448,448)
-    cf = torch.softmax(cc, dim=0)
-    cf = torch.argmax(cf, dim=0)
-    tg = cc.gather(dim=0, index=cf.unsqueeze(0).expand_as(cc))
-    print(tg[:, 0, 0])
-    th = torch.mean(tg, dim=0)
-    print(th[0, 0])
-    
-    
-    
-    e = torch.stack((c,cc))
-    print(e.shape)
-    print(e[0,:,0,0])
-    print(e[1,:,0,0])
-    f = torch.softmax(e,dim=1)
-    f = torch.argmax(f,dim=1)
-    print(f.shape)
-    # mask_target_cls = rgb_map.gather(dim=0,index=mask_target_max_arg.unsqueeze(0).expand_as(rgb_map))
-       
-    g = e.gather(dim=1,index=f.unsqueeze(1).expand_as(e))
-    print(g.shape)
-    print(g[0,:,0,0])
-    print(g[1,:,0,0])
-    h = torch.sum(g, dim=1)
-    print(h.shape)
-    print(h[0, 0, 0])
-    print(h[1, 0, 0])
-    
+    print(d)
+    print(d.shape)
+    e = d.unsqueeze(0)
+    f = e.repeat((8,1,1))
+    print(f[:, 0, 0])
+    print(f[:, 0, 4])
+    print(f[:, 2, 0])
 
     
     

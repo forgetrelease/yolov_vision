@@ -142,21 +142,33 @@ class SquaredMaskLoss(nn.Module):
     def forward(self, input, target, mask_input, mask_target):
         if self.only_box == False:
             # mask loss
+            # mask_input b,21,448,448 mask_target b,1,448,448
             cls_count = self.rgb_map.shape[-1]
             rgb_map = self.rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(cls_count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448
             rgb_map = rgb_map.unsqueeze(0).repeat((BATCH_SIZE,1,1,1)).expand(BATCH_SIZE,cls_count,IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448 > 32,21,448,448
+            '''
+            在您提供的forward函数中，您似乎在尝试计算一个基于掩码（mask）的损失。在PyTorch中，当您使用.gather()方法或者类似的操作
+            （如.argmax()）时，返回的通常是不可导的张量（即requires_grad=False），因为这些操作本质上不是可导的。然而，由于您正在计
+            算损失，您可能希望这些操作是可导的，以便可以反向传播梯度。
+            '''
+            # mask_target > b,21,448,448
+            mask_target = torch.mean(mask_target, dim=1,keepdim=True)
+            # mask_input > b,21,448,448
             
-            mask_input_max = torch.softmax(mask_input, dim=1)
-            mask_input_max_arg = torch.argmax(mask_input_max, dim=1)
-            mask_input_cls = rgb_map.gather(dim=1,index=mask_input_max_arg.unsqueeze(1).expand_as(rgb_map))
-            mask_input_image = torch.mean(mask_input_cls, dim=1)
             
-            mask_target_max = torch.softmax(mask_target, dim=1)
-            mask_target_max_arg = torch.argmax(mask_target_max, dim=1)
-            mask_target_cls = rgb_map.gather(dim=1,index=mask_target_max_arg.unsqueeze(1).expand_as(rgb_map))
-            mask_target_image = torch.sum(mask_target_cls, dim=1)
+            # mask_input_max = torch.softmax(mask_input, dim=1)
+            # mask_input_max_arg = torch.argmax(mask_input_max, dim=1)
+            # mask_input_cls = rgb_map.gather(dim=1,index=mask_input_max_arg.unsqueeze(1).expand_as(rgb_map))
+            # mask_input_image = torch.mean(mask_input_cls, dim=1)
             
-            mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
+            # mask_target_max = torch.softmax(mask_target, dim=1)
+            # mask_target_max_arg = torch.argmax(mask_target_max, dim=1)
+            # mask_target_cls = rgb_map.gather(dim=1,index=mask_target_max_arg.unsqueeze(1).expand_as(rgb_map))
+            # mask_target_image = torch.sum(mask_target_cls, dim=1)
+            
+            # mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
+            mask_loss = F.binary_cross_entropy_with_logits(input=mask_input, target=mask_target, reduction='mean')
+            # mask_loss = F.mse_loss(input=mask_input, target=mask_target, reduction='mean')
             return self.mask_loss * mask_loss / BATCH_SIZE
         iou = self.iou(input, target)   ## b, 7, 7, 2
         max_iou = torch.max(iou, dim=-1)[0] ## b, 7, 7, 1

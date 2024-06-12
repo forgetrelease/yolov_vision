@@ -106,8 +106,12 @@ def train_mask(only_box=True):
     if only_box:
         for param in model.mask_pred.parameters():
             param.requires_grad = False
+        for param in model.model.parameters():
+            param.requires_grad = True
         optimizer = torch.optim.Adam(model.model.parameters(), lr=LEARNING_RATE)
     else:
+        for param in model.mask_pred.parameters():
+            param.requires_grad = True
         for param in model.model.parameters():
             param.requires_grad = False
         optimizer = torch.optim.Adam(model.mask_pred.parameters(), lr=LEARNING_RATE)

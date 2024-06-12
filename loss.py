@@ -110,13 +110,14 @@ class BoxLoss(nn.Module):
 
 
 class SquaredMaskLoss(nn.Module):
-    def __init__(self,device=None):
+    def __init__(self,device=None,only_box=True):
         super().__init__()
         self.coord_loss = 5
         self.noobj_loss = 0.5
         self.mask_loss = 0.001
         rgb_map_num = np.load("./rgbs.npy")
         self.rgb_map = torch.from_numpy(rgb_map_num)#20
+        self.only_box = only_box
         if device is not None:
             self.rgb_map = self.rgb_map.to(device)
     # 返回计算相交区域占比，BATCH_SIZE, 7, 7, 2
@@ -139,6 +140,24 @@ class SquaredMaskLoss(nn.Module):
     # 类和非类相似
     # 
     def forward(self, input, target, mask_input, mask_target):
+        if self.only_box == False:
+            # mask loss
+            cls_count = self.rgb_map.shape[-1]
+            rgb_map = self.rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(cls_count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448
+            rgb_map = rgb_map.unsqueeze(0).repeat((BATCH_SIZE,1,1,1)).expand(BATCH_SIZE,cls_count,IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448 > 32,21,448,448
+            
+            mask_input_max = torch.softmax(mask_input, dim=1)
+            mask_input_max_arg = torch.argmax(mask_input_max, dim=1)
+            mask_input_cls = rgb_map.gather(dim=1,index=mask_input_max_arg.unsqueeze(1).expand_as(rgb_map))
+            mask_input_image = torch.mean(mask_input_cls, dim=1)
+            
+            mask_target_max = torch.softmax(mask_target, dim=1)
+            mask_target_max_arg = torch.argmax(mask_target_max, dim=1)
+            mask_target_cls = rgb_map.gather(dim=1,index=mask_target_max_arg.unsqueeze(1).expand_as(rgb_map))
+            mask_target_image = torch.sum(mask_target_cls, dim=1)
+            
+            mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
+            return self.mask_loss * mask_loss / BATCH_SIZE
         iou = self.iou(input, target)   ## b, 7, 7, 2
         max_iou = torch.max(iou, dim=-1)[0] ## b, 7, 7, 1
         max_iou = torch.unsqueeze(max_iou, -1)  ## b, 7, 7, 1
@@ -189,22 +208,6 @@ class SquaredMaskLoss(nn.Module):
             obj_ij * torch.sign(input_height)*torch.sqrt(torch.abs(input_height))+EPSILON,
             obj_ij * torch.sqrt(box_attr(target, 3))
         )
-         # mask loss
-        cls_count = self.rgb_map.shape[-1]
-        rgb_map = self.rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(cls_count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448
-        rgb_map = rgb_map.unsqueeze(0).repeat((BATCH_SIZE,1,1,1)).expand(BATCH_SIZE,cls_count,IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448 > 32,21,448,448
-        
-        mask_input_max = torch.softmax(mask_input, dim=1)
-        mask_input_max_arg = torch.argmax(mask_input_max, dim=1)
-        mask_input_cls = rgb_map.gather(dim=1,index=mask_input_max_arg.unsqueeze(1).expand_as(rgb_map))
-        mask_input_image = torch.mean(mask_input_cls, dim=1)
-        
-        mask_target_max = torch.softmax(mask_target, dim=1)
-        mask_target_max_arg = torch.argmax(mask_target_max, dim=1)
-        mask_target_cls = rgb_map.gather(dim=1,index=mask_target_max_arg.unsqueeze(1).expand_as(rgb_map))
-        mask_target_image = torch.sum(mask_target_cls, dim=1)
-        
-        mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
         
         
         # print(f"class_loss:{class_loss.item()}, confidence_loss:{confidence_loss.item()}, no_confidence_loss:{no_confidence_loss.item()}, x_loss:{x_loss.item()}, y_loss:{y_loss.item()}, w_loss:{w_loss.item()}, h_loss:{h_loss.item()}, mask_loss:{mask_loss.item()}")
@@ -212,6 +215,5 @@ class SquaredMaskLoss(nn.Module):
                     + confidence_loss \
                     + self.noobj_loss * no_confidence_loss \
                     + self.coord_loss *(x_loss + y_loss + w_loss + h_loss) \
-                    + self.mask_loss * mask_loss
                     
-        return total_loss / BATCH_SIZE, mask_loss
+        return total_loss / BATCH_SIZE

@@ -9,6 +9,7 @@ from config import LEARNING_RATE, BATCH_SIZE, DATA_ROOT,EPOCHS,NUM_WORKERS
 import os,shutil
 from utils.vision import save_loss_rate
 import argparse
+import sys
 
 def main():
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -87,7 +88,7 @@ def main():
         loss_data['val'] = val_data
         save_loss_rate(loss_data, loss_rate_file)
         torch.save(model.state_dict(), 'final.pth')
-def train_mask():
+def train_mask(only_box=True):
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
     model = ImageMaskNet().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -96,12 +97,19 @@ def train_mask():
         os.makedirs(results_dir)
     loss_rate_file = os.path.join(results_dir, 'loss-mask.png')
     loss_data = {}
-    
-    try:
-        model.load_state_dict(torch.load('final-mask.pth'))
-        optimizer.load_state_dict(torch.load('final-mask-opt.pth'))
-    except Exception:
-        pass
+    if only_box:
+        for param in model.mask_pred.parameters():
+            param.requires_grad = False
+        optimizer = torch.optim.Adam(model.model.parameters(), lr=LEARNING_RATE)
+    else:
+        try:
+            model.load_state_dict(torch.load('final-mask.pth'))
+            optimizer.load_state_dict(torch.load('final-mask-opt.pth'))
+        except Exception:
+            pass
+        for param in model.model.parameters():
+            param.requires_grad = True
+        optimizer = torch.optim.Adam(model.mask_pred.parameters(), lr=LEARNING_RATE)
     # model.train()
     train_data_set = MaskDetect('./data/box-mask.cache/trainval')
     train_data_loader = DataLoader(
@@ -121,39 +129,35 @@ def train_mask():
         drop_last=True
         )
     
-    loss_function = SquaredMaskLoss(device=device)
+    loss_function = SquaredMaskLoss(device=device,only_box=only_box)
     
     best_loss = float('inf')
     for epoch in tqdm(range(EPOCHS), desc='Epoch'):
         train_loss = 0.0
-        mask_loss = 0.0
         model.train()
         for image, target, mask in tqdm(train_data_loader, desc='Train', leave=False):
             image = image.to(device)
             target = target.to(device)
             mask = mask.to(device)
-            optimizer.zero_grad()
+            optimizer.zero_grad() #迭代开始的时候清除累积的梯度
             output, output_mask = model(image)
-            loss, m_loss = loss_function(output, target, output_mask, mask)
-            loss.backward()
-            optimizer.step()
+            loss = loss_function(output, target, output_mask, mask)
+            loss.backward() #计算梯度
+            optimizer.step() #根据计算出的梯度更新参数
             train_loss += loss.item() / len(train_data_loader)
-            mask_loss += m_loss.item() / len(train_data_loader)
             del image, target
         
         if epoch % 4 == 0:
             model.eval()
             with torch.no_grad():
                 test_loss = 0
-                test_mask_loss = 0.0
                 for image, target, mask in tqdm(val_data_loader, desc='Validate', leave=False):
                     image = image.to(device)
                     target = target.to(device)
                     mask = mask.to(device)
                     output, output_mask = model(image)
-                    loss,m_loss = loss_function(output, target, output_mask, mask)
+                    loss = loss_function(output, target, output_mask, mask)
                     test_loss += loss.item() / len(val_data_loader)
-                    test_mask_loss += m_loss.item() / len(val_data_loader)
                     del image, target
             if best_loss > test_loss:
                 best_loss = test_loss
@@ -166,12 +170,15 @@ def train_mask():
         val_data = loss_data.get('val', [])
         val_data.append(test_loss)
         loss_data['val'] = val_data
-        mask_data = loss_data.get('mask', [])
-        mask_data.append(mask_loss)
-        loss_data['mask'] = val_data
         save_loss_rate(loss_data, loss_rate_file)
         torch.save(model.state_dict(), 'final-mask.pth')
         torch.save(optimizer.state_dict(), 'final-mask-opt.pth')
+def prepare_mask_data():
+    cache = os.path.join(DATA_ROOT, 'box-mask.cache')
+    if os.path.exists(cache):
+        shutil.rmtree(cache)
+    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
+    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
 if __name__ == '__main__':
     # main()
     # cache = os.path.join(DATA_ROOT, 'images.cache')
@@ -191,4 +198,13 @@ if __name__ == '__main__':
     # parser = argparse.ArgumentParser()
     
     # main()
-    train_mask()
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--only_box', action='store_true', help='only train box regression')
+    parser.add_argument('--cache_data', action='store_true', help='cache data')
+    opt = parser.parse_args()
+    if opt.cache_data:
+        cache = os.path.join(DATA_ROOT, 'images.cache')
+    else:
+        pass
+    train_mask(only_box=opt.only_box)

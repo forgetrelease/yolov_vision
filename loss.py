@@ -152,7 +152,7 @@ class SquaredMaskLoss(nn.Module):
             算损失，您可能希望这些操作是可导的，以便可以反向传播梯度。
             '''
             # mask_target > b,21,448,448
-            mask_target = torch.mean(mask_target, dim=1,keepdim=True)
+            # mask_target = torch.mean(mask_target, dim=1,keepdim=True)
             # mask_input > b,21,448,448
             
             

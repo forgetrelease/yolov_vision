@@ -109,7 +109,7 @@ def train_mask(only_box=True):
         optimizer = torch.optim.Adam(model.model.parameters(), lr=LEARNING_RATE)
     else:
         for param in model.model.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         optimizer = torch.optim.Adam(model.mask_pred.parameters(), lr=LEARNING_RATE)
     try:
         optimizer.load_state_dict(torch.load('final-mask-opt.pth'))

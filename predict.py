@@ -9,7 +9,7 @@ from utils.dataset import resize_image_, annotation_filename, resize_image_mask_
 import os
 from utils.vision import show_box_masks
 import sys
-from utils.dataset import BoxDetect
+from utils.dataset import BoxDetect, MaskDetect
 from config import *
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -20,7 +20,7 @@ def pred_mask(images_path):
     model = ImageMaskNet().to(device)
     
     try:
-        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/best-mask.pth', map_location=device))
+        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/final-mask.pth', map_location=device))
     except Exception as e:
         print("加载模型出错", e)
         return
@@ -59,7 +59,7 @@ def pred_box(image_path,model):
     image = show_box_masks(image, results[0,:,:,:])
     return image
 def predict(model):
-    train_data_set = BoxDetect('./data/box.cache/trainval')
+    train_data_set = MaskDetect('./data/box-mask.cache/trainval')
     train_data_loader = DataLoader(
         train_data_set,
         batch_size=BATCH_SIZE,
@@ -68,11 +68,11 @@ def predict(model):
         drop_last=True,
         shuffle=True
         )
-    for image, target in tqdm(train_data_loader, desc='Predict', leave=False):
+    for image, target, mask in tqdm(train_data_loader, desc='Predict', leave=False):
         image = image.to(device)
         # target = target.to(device)
         with torch.no_grad():
-            result = model(image)
+            result, mask_result = model(image)
             for i in range(BATCH_SIZE):
                 img = show_box_masks(image[i,:,:,:], result[i,:,:,:])
                 img.show()
@@ -104,10 +104,10 @@ def predict_images(model, source):
 if __name__ == '__main__':
     args = sys.argv
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = ImageResNet().to(device)
+    model = ImageMaskNet().to(device)
     model.eval()
     try:
-        model.load_state_dict(torch.load('best.pth', map_location=device))
+        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/final-mask.pth', map_location=device))
     except Exception as e:
         print("加载模型出错", e)
         

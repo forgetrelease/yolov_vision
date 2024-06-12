@@ -114,7 +114,7 @@ class SquaredMaskLoss(nn.Module):
         super().__init__()
         self.coord_loss = 5
         self.noobj_loss = 0.5
-        self.mask_loss = 0.001
+        self.mask_loss = 1.0
         rgb_map_num = np.load("./rgbs.npy")
         self.rgb_map = torch.from_numpy(rgb_map_num)#20
         self.only_box = only_box

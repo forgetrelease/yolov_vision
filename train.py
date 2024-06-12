@@ -97,19 +97,24 @@ def train_mask(only_box=True):
         os.makedirs(results_dir)
     loss_rate_file = os.path.join(results_dir, 'loss-mask.png')
     loss_data = {}
+    try:
+        model.load_state_dict(torch.load('final-mask.pth'))
+        # 这里要优化
+        # optimizer.load_state_dict(torch.load('final-mask-opt.pth'))
+    except Exception:
+        pass
     if only_box:
         for param in model.mask_pred.parameters():
             param.requires_grad = False
         optimizer = torch.optim.Adam(model.model.parameters(), lr=LEARNING_RATE)
     else:
-        try:
-            model.load_state_dict(torch.load('final-mask.pth'))
-            optimizer.load_state_dict(torch.load('final-mask-opt.pth'))
-        except Exception:
-            pass
         for param in model.model.parameters():
             param.requires_grad = True
         optimizer = torch.optim.Adam(model.mask_pred.parameters(), lr=LEARNING_RATE)
+    try:
+        optimizer.load_state_dict(torch.load('final-mask-opt.pth'))
+    except Exception:
+        pass
     # model.train()
     train_data_set = MaskDetect('./data/box-mask.cache/trainval')
     train_data_loader = DataLoader(

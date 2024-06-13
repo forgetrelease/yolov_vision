@@ -13,7 +13,8 @@ import torchvision.transforms as transforms
 def parse_rgb_allImage(black_rgbs=[1.0]):
     all_rgbs = torch.Tensor(0)
     all_val=set()
-    for root, dirs, files in os.walk('/Users/chunsheng/Desktop/workspace/pytorch_study/yolov_vision/data/VOCdevkit/VOC2007/SegmentationClass/'):
+    print(os.path.join(DATA_ROOT, '/VOCdevkit/VOC2007/SegmentationClass/'))
+    for root, dirs, files in os.walk('./data/VOCdevkit/VOC2007/SegmentationClass/'):
         for file in files:
             if file.endswith('.png'):
                 image = Image.open(os.path.join(root, file)) #不要转RGB，否则1个channel变3个，image = image.convert('RGB')

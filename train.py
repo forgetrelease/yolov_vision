@@ -192,7 +192,7 @@ def prepare_mask_data():
         os.remove(cache)
     
     uinque_rgb = parse_rgb_allImage(black_rgbs=[1.0,])
-    np.save('./rgbs.npy', uinque_rgb.numpy())
+    np.save('./rgbs', uinque_rgb.numpy())
     data = np.load('./rgbs.npy', allow_pickle=True)
     rgbs = torch.from_numpy(data)
     assert rgbs.shape[-1] > 10

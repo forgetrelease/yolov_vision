@@ -157,18 +157,17 @@ class SquaredMaskLoss(nn.Module):
             cls_mask_target = mask_target[:, :21, :, :]
             confidence_input = mask_input[:, 21:22, :, :]
             confidence_target = mask_target[:, 21:22, :, :]
-            mmask = torch.zeros_like(confidence_input)
-            mmask[confidence_input > 0] = 1
+            mmask = torch.zeros_like(confidence_target)
+            mmask[confidence_target > 0] = 1
             mmask = mmask.repeat(1, 21, 1, 1)
-            cls_mask_input = cls_mask_input * mmask
-            cls_mask_target = cls_mask_target * mmask
-            
+            no_obj = ~mmask
             # 计算类损失
-            cls_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input, target=cls_mask_target, reduction='mean')
+            cls_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input * mmask, target=cls_mask_target * mmask, reduction='mean')
             
             conf_loss = F.binary_cross_entropy_with_logits(input=confidence_input, target=confidence_target, reduction='mean')
-
-            return (cls_loss + conf_loss) / BATCH_SIZE
+            no_obj_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input*no_obj, target=cls_mask_target*no_obj, reduction='mean')
+            # 计算总损失
+            return (cls_loss + conf_loss + no_obj) / BATCH_SIZE
         iou = self.iou(input, target)   ## b, 7, 7, 2
         max_iou = torch.max(iou, dim=-1)[0] ## b, 7, 7, 1
         max_iou = torch.unsqueeze(max_iou, -1)  ## b, 7, 7, 1

@@ -193,6 +193,9 @@ def prepare_mask_data():
     
     uinque_rgb = parse_rgb_allImage(black_rgbs=[1.0,])
     np.save('./rgbs.npy', uinque_rgb.numpy())
+    data = np.load('./rgbs.npy', allow_pickle=True)
+    rgbs = torch.from_numpy(data)
+    assert rgbs.shape[-1] > 10
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
     MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
 def main(opt):

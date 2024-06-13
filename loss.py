@@ -158,9 +158,13 @@ class SquaredMaskLoss(nn.Module):
             confidence_input = mask_input[:, 21:22, :, :]
             confidence_target = mask_target[:, 21:22, :, :]
             mmask = torch.zeros_like(confidence_target)
-            mmask[confidence_target > 0] = 1
+            mmask_idx = confidence_target > 0
+            mmask[mmask_idx] = 1
             mmask = mmask.repeat(1, 21, 1, 1)
-            no_obj = ~mmask
+            no_obj_idx  = ~mmask_idx
+            no_obj = torch.zeros_like(confidence_target)
+            no_obj[no_obj_idx] = 1
+            no_obj = no_obj.repeat(1, 21, 1, 1)
             # 计算类损失
             cls_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input * mmask, target=cls_mask_target * mmask, reduction='mean')
             

@@ -95,7 +95,13 @@ def show_box_masks(image, target, mask=None, color=(1,0,0)):
         rgb_map = torch.from_numpy(rgb_map_num)#20
         count = rgb_map.shape[-1]
         rgb_map = rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #11,448,448
-        mask_image = torch.softmax(mask, dim=0)
+        mask_image = mask[:21, :, :]
+        confidence = mask[21:22,:, :]
+        mmask = torch.zeros_like(confidence)
+        mmask[confidence>0] = 1
+        mmask = mmask.repeat(21,1,1)
+        mask_image = mask_image * mmask
+        mask_image = torch.softmax(torch.abs(mask_image), dim=0)
         arg_max = torch.argmax(mask_image, dim=0)
         max_ones_idx = rgb_map.gather(dim=0,index=arg_max.unsqueeze(0).expand_as(rgb_map))
         # 这里所有值是一样的，所以是求平均而不是求和

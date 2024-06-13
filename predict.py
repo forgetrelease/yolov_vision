@@ -74,7 +74,7 @@ def predict(model):
         with torch.no_grad():
             result, mask_result = model(image)
             for i in range(BATCH_SIZE):
-                img = show_box_masks(image[i,:,:,:], result[i,:,:,:])
+                img = show_box_masks(image[i,:,:,:], result[i,:,:,:],mask_result[i,:,:,:])
                 img.show()
 def predict_images(model, source):
     save_dir = os.path.dirname(DATA_ROOT)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     model = ImageMaskNet().to(device)
     model.eval()
     try:
-        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/final-mask.pth', map_location=device))
+        model.load_state_dict(torch.load('/Users/chunsheng/Downloads/best-mask.pth', map_location=device))
     except Exception as e:
         print("加载模型出错", e)
         

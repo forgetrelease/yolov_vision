@@ -39,8 +39,8 @@ def test_loss():
     target =torch.tensor(target).reshape(1,1,1,13)
     print(loss(pred, target))
 def test_mask():
-    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
-    MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
+    # MaskDetect.prepare_voc_data(DATA_ROOT,image_set='val')
+    # MaskDetect.prepare_voc_data(DATA_ROOT,image_set='trainval')
     val_data_set = MaskDetect('./data/box-mask.cache/val')
     val_data_loader = DataLoader(
         val_data_set,
@@ -65,7 +65,8 @@ def exp_rgbs():
     return rgbs.unsqueeze(1).unsqueeze(1).repeat((1,10,10)).expand(3, 10, 10)
                 
 if __name__ == "__main__":
-    # test_mask()
+    
+    test_mask()
     a = [1,2,3,4,5]
     b = [2,3,4,9,8]
     c = [4,4,4,4,4]

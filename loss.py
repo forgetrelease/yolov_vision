@@ -151,25 +151,24 @@ class SquaredMaskLoss(nn.Module):
             （如.argmax()）时，返回的通常是不可导的张量（即requires_grad=False），因为这些操作本质上不是可导的。然而，由于您正在计
             算损失，您可能希望这些操作是可导的，以便可以反向传播梯度。
             '''
-            # mask_target > b,21,448,448
-            # mask_target = torch.mean(mask_target, dim=1,keepdim=True)
-            # mask_input > b,21,448,448
             
+            # mask_loss = F.binary_cross_entropy_with_logits(input=mask_input, target=mask_target, reduction='mean')
+            cls_mask_input = mask_input[:, :21, :, :]
+            cls_mask_target = mask_target[:, :21, :, :]
+            confidence_input = mask_input[:, 21:22, :, :]
+            confidence_target = mask_target[:, 21:22, :, :]
+            mmask = torch.zeros_like(confidence_input)
+            mmask[confidence_input > 0] = 1
+            mmask = mmask.repeat(1, 21, 1, 1)
+            cls_mask_input = cls_mask_input * mmask
+            cls_mask_target = cls_mask_target * mmask
             
-            # mask_input_max = torch.softmax(mask_input, dim=1)
-            # mask_input_max_arg = torch.argmax(mask_input_max, dim=1)
-            # mask_input_cls = rgb_map.gather(dim=1,index=mask_input_max_arg.unsqueeze(1).expand_as(rgb_map))
-            # mask_input_image = torch.mean(mask_input_cls, dim=1)
+            # 计算类损失
+            cls_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input, target=cls_mask_target, reduction='mean')
             
-            # mask_target_max = torch.softmax(mask_target, dim=1)
-            # mask_target_max_arg = torch.argmax(mask_target_max, dim=1)
-            # mask_target_cls = rgb_map.gather(dim=1,index=mask_target_max_arg.unsqueeze(1).expand_as(rgb_map))
-            # mask_target_image = torch.sum(mask_target_cls, dim=1)
-            
-            # mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
-            mask_loss = F.binary_cross_entropy_with_logits(input=torch.abs(mask_input), target=mask_target, reduction='mean')
-            # mask_loss = F.mse_loss(input=mask_input, target=mask_target, reduction='mean')
-            return self.mask_loss * mask_loss / BATCH_SIZE
+            conf_loss = F.binary_cross_entropy_with_logits(input=confidence_input, target=confidence_target, reduction='mean')
+
+            return (cls_loss + conf_loss) / BATCH_SIZE
         iou = self.iou(input, target)   ## b, 7, 7, 2
         max_iou = torch.max(iou, dim=-1)[0] ## b, 7, 7, 1
         max_iou = torch.unsqueeze(max_iou, -1)  ## b, 7, 7, 1

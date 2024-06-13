@@ -66,7 +66,7 @@ class ImageMaskNet(nn.Module):
             Reshape(2, 448, 448),
             nn.ConvTranspose2d(2, 1, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(1, 21, kernel_size=1),
+            nn.Conv2d(1, 22, kernel_size=1),
         )
     def forward(self, x):
         feature = self.features_backbone(x)

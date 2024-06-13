@@ -372,13 +372,18 @@ def resize_image_mask_target(image, target, mask=None, rgb_map=None):
             transforms.Resize(IMAGE_SIZE),
         ])
         channels = scal_transform(channels)
-        mask_data = torch.zeros_like(channels)
+        cls_count = rgb_map.shape[-1]
+        mask_data = torch.zeros(cls_count + 1 ,IMAGE_SIZE[-2],IMAGE_SIZE[-1])
         # 调整mask大小
         for i in range(channels.shape[0]):
             rgb = channels[i,:,:]
             temp = torch.zeros_like(rgb)
             temp[rgb>0] = rgb_map[i]
             mask_data[i,:,:] = temp
+        confidence = torch.zeros(IMAGE_SIZE[-2],IMAGE_SIZE[-1])
+        confidence_mask = torch.sum(mask_data, dim=0)
+        confidence[confidence_mask>0] = 1.0
+        mask_data[cls_count,:,:] = confidence
             
     return image, target, mask_data
 def read_local_mask(mask_file):

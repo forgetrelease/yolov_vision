@@ -143,9 +143,9 @@ class SquaredMaskLoss(nn.Module):
         if self.only_box == False:
             # mask loss
             # mask_input b,21,448,448 mask_target b,1,448,448
-            cls_count = self.rgb_map.shape[-1]
-            rgb_map = self.rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(cls_count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448
-            rgb_map = rgb_map.unsqueeze(0).repeat((BATCH_SIZE,1,1,1)).expand(BATCH_SIZE,cls_count,IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448 > 32,21,448,448
+            # cls_count = self.rgb_map.shape[-1]
+            # rgb_map = self.rgb_map.unsqueeze(1).unsqueeze(1).repeat((1,IMAGE_SIZE[1],IMAGE_SIZE[0])).expand(cls_count, IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448
+            # rgb_map = rgb_map.unsqueeze(0).repeat((BATCH_SIZE,1,1,1)).expand(BATCH_SIZE,cls_count,IMAGE_SIZE[1],IMAGE_SIZE[0]) #21,448,448 > 32,21,448,448
             '''
             在您提供的forward函数中，您似乎在尝试计算一个基于掩码（mask）的损失。在PyTorch中，当您使用.gather()方法或者类似的操作
             （如.argmax()）时，返回的通常是不可导的张量（即requires_grad=False），因为这些操作本质上不是可导的。然而，由于您正在计
@@ -167,7 +167,7 @@ class SquaredMaskLoss(nn.Module):
             # mask_target_image = torch.sum(mask_target_cls, dim=1)
             
             # mask_loss = F.binary_cross_entropy_with_logits(input=mask_input_image, target=mask_target_image, reduction='mean')
-            mask_loss = F.binary_cross_entropy_with_logits(input=mask_input, target=mask_target, reduction='mean')
+            mask_loss = F.binary_cross_entropy_with_logits(input=torch.abs(mask_input), target=mask_target, reduction='mean')
             # mask_loss = F.mse_loss(input=mask_input, target=mask_target, reduction='mean')
             return self.mask_loss * mask_loss / BATCH_SIZE
         iou = self.iou(input, target)   ## b, 7, 7, 2

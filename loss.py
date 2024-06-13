@@ -160,8 +160,8 @@ class SquaredMaskLoss(nn.Module):
             mmask = torch.zeros_like(confidence_input)
             mmask[confidence_input > 0] = 1
             mmask = mmask.repeat(1, 21, 1, 1)
-            cls_mask_input = cls_mask_input * mmask
-            cls_mask_target = cls_mask_target * mmask
+            # cls_mask_input = cls_mask_input * mmask
+            # cls_mask_target = cls_mask_target * mmask
             
             # 计算类损失
             cls_loss = F.binary_cross_entropy_with_logits(input=cls_mask_input, target=cls_mask_target, reduction='mean')

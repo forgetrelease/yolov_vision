@@ -546,19 +546,19 @@ class MaskDetect(DetectBase):
                 # x[image_name] = labels.numpy()
                 mask_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','SegmentationClass', image_name + '.png')
                 # image_path = os.path.join(DATA_ROOT, 'VOCdevkit','VOC2007','JPEGImages', image_name + '.jpg')
-                try:
-                    img_save = Path(os.path.join(save_dir, image_name + '.npy'))
-                    if os.path.exists(img_save):
-                        continue
-                    
-                    mask = Image.open(mask_path)
-                    image, labels, masks = resize_image_mask_target(image=image, target=labels, mask=mask,rgb_map=rgb_map)
-                    x['image'] = image.numpy()
-                    x['target'] = labels.numpy()
-                    x['mask'] = masks.numpy()
-                    np.save(img_save, x)
-                except Exception as e:
-                    print(f"保存缓存失败:{e}")
+                # try:
+                img_save = Path(os.path.join(save_dir, image_name + '.npy'))
+                if os.path.exists(img_save):
+                    continue
+                
+                mask = Image.open(mask_path)
+                image, labels, masks = resize_image_mask_target(image=image, target=labels, mask=mask,rgb_map=rgb_map)
+                x['image'] = image.numpy()
+                x['target'] = labels.numpy()
+                x['mask'] = masks.numpy()
+                np.save(img_save, x)
+                # except Exception as e:
+                #     print(f"保存缓存失败:{e}")
         return save_dir
     
     
